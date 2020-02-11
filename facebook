@@ -1,0 +1,88 @@
+  TextView txtemail ;
+    //ImageView loginFB;
+    CallbackManager callbackManager;
+    ProgressDialog mDialog;
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        callbackManager.onActivityResult(requestCode,resultCode,data);
+    }
+
+
+
+
+
+
+  // printkeyHash();
+           callbackManager = CallbackManager.Factory.create();
+           txtemail = (TextView)findViewById(R.id.txtmail);
+           LoginButton loginFB = (LoginButton)findViewById(R.id.loginfb);
+           loginFB.setReadPermissions(Arrays.asList("email"));
+           loginFB.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
+               @Override
+               public void onSuccess(LoginResult loginResult) {
+                   mDialog = new ProgressDialog(Login.this);
+                   mDialog.setMessage("Retrieving data ...");
+                   mDialog.show();
+                   String accesstoken = loginResult.getAccessToken().getToken();
+                   GraphRequest request = GraphRequest.newMeRequest(loginResult.getAccessToken(), new GraphRequest.GraphJSONObjectCallback() {
+                       @Override
+                       public void onCompleted(JSONObject object, GraphResponse response) {
+                           mDialog.dismiss();
+                           Log.d("response",response.toString());
+                           getData(object);
+                       }
+                   });
+
+                   //request Graph api
+                   Bundle parametre = new Bundle();
+                   parametre.putString("field","email");
+                   request.setParameters(parametre);
+                   request.executeAsync();
+               }
+
+               @Override
+               public void onCancel() {
+
+               }
+
+               @Override
+               public void onError(FacebookException error) {
+
+               }
+           });
+
+           if (AccessToken.getCurrentAccessToken() != null){
+               txtemail.setText((AccessToken.getCurrentAccessToken().getUserId()));
+           }
+
+
+
+
+ private void getData(JSONObject object) {
+        try {
+            txtemail.setText(object.getString("email"));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+     private void printkeyHash() {
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo("com.example.mongodb", PackageManager.GET_SIGNATURES);
+            for (Signature signature:info.signatures)
+            {
+                MessageDigest md = MessageDigest.getInstance("SHA");
+                md.update(signature.toByteArray());
+                Log.d("keyHash", Base64.encodeToString(md.digest(),Base64.DEFAULT));
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+    }
